@@ -1,5 +1,5 @@
 
-enet_proto = Proto("enet", "ENET LoL UDP Protocol")
+enet = Proto("enet", "ENet LoL UDP Protocol")
 
 MAX_ITEM_LABEL_LENGTH = 240
 MIN_PORT = 5000
@@ -15,9 +15,9 @@ require "blowfish"
 command2string = {
 	[0] = "NONE",
 	[1] = "ACKNOWLEDGE",
-	[2] = "CONNECT",
-	[3] = "VERIFY_CONNECT",
-	[4] = "DISCONNECT",
+	[2] = "handshakeECT",
+	[3] = "VERIFY_handshakeECT",
+	[4] = "DIShandshakeECT",
 	[5] = "PING",
 	[6] = "SEND_RELIABLE",
 	[7] = "SEND_UNRELIABLE",
@@ -27,64 +27,65 @@ command2string = {
 	[11] = "THROTTLE_CONFIGURE",
 	[99] = "UNKNOWN COMMAND (THIS IS AN ERROR)",
 }
-pf_checksum = ProtoField.new("Checksum", "enet_proto.checksum", ftypes.UINT32)
-pf_flag_has_sent_time = ProtoField.new("'Sent Time'-Flag", "enet_proto.flag_sent_time", ftypes.BOOLEAN)
-pf_peer_id = ProtoField.new("Peer Id", "enet_proto.peer_id", ftypes.UINT16)
-pf_sent_time = ProtoField.new("Sent Time", "enet_proto.sent_time", ftypes.UINT16)
-pf_seqnumber = ProtoField.new("Sequence number", "enet_proto.seqnumber", ftypes.UINT16)
-pf_command = ProtoField.new("Command", "enet_proto.command", ftypes.UINT8, command2string, base.DEC, 0x0f)
-pf_channel = ProtoField.new("ChannelID", "enet_proto.channel", ftypes.UINT8)
-pf_proto_header = ProtoField.new("ENET Protocol Header", "enet_proto.proto_header", ftypes.BYTES, nil, base.NONE)
-pf_header = ProtoField.new("ENET Command Header", "enet_proto.header", ftypes.BYTES, nil, base.NONE)
-pf_data_length = ProtoField.new("Data length", "enet_proto.data_length", ftypes.UINT16)
-pf_data = ProtoField.new("LoL Data", "enet_proto.data", ftypes.BYTES)
-pf_data_decrypted = ProtoField.new("Decrypted Payload", "enet_proto.data.decrypted", ftypes.BYTES)
-pf_key = ProtoField.new("LoL Game Key", "enet_proto.key", ftypes.STRING)
+--[[
+pf_checksum = ProtoField.new("Checksum", "enet.checksum", ftypes.UINT32)
+pf_flag_has_sent_time = ProtoField.new("'Sent Time'-Flag", "enet.flag_sent_time", ftypes.BOOLEAN)
+pf_peer_id = ProtoField.new("Peer Id", "enet.peer_id", ftypes.UINT16)
+pf_sent_time = ProtoField.new("Sent Time", "enet.sent_time", ftypes.UINT16)
+pf_seqnumber = ProtoField.new("Sequence number", "enet.seqnumber", ftypes.UINT16)
+pf_command = ProtoField.new("Command", "enet.command", ftypes.UINT8, command2string, base.DEC, 0x0f)
+pf_channel = ProtoField.new("ChannelID", "enet.channel", ftypes.UINT8)
+pf_proto_header = ProtoField.new("ENET Protocol Header", "enet.proto_header", ftypes.BYTES, nil, base.NONE)
+pf_header = ProtoField.new("ENET Command Header", "enet.header", ftypes.BYTES, nil, base.NONE)
+pf_data_length = ProtoField.new("Data length", "enet.data_length", ftypes.UINT16)
+pf_data = ProtoField.new("LoL Data", "enet.data", ftypes.BYTES)
+pf_data_decrypted = ProtoField.new("Decrypted Payload", "enet.data.decrypted", ftypes.BYTES)
+pf_key = ProtoField.new("LoL Game Key", "enet.key", ftypes.STRING)
 
-pf_ack = ProtoField.new("Acknowledge", "enet_proto.acknowledge", ftypes.BYTES, nil, base.NONE)
-pf_ack_seqnum = ProtoField.new("Sequence Number", "enet_proto.acknowledge.seqnum", ftypes.UINT16)
-pf_ack_recvtime = ProtoField.new("Received Time", "enet_proto.acknowledge.recvtime", ftypes.UINT16)
+pf_ack = ProtoField.new("Acknowledge", "enet.acknowledge", ftypes.BYTES, nil, base.NONE)
+pf_ack_seqnum = ProtoField.new("Sequence Number", "enet.acknowledge.seqnum", ftypes.UINT16)
+pf_ack_recvtime = ProtoField.new("Received Time", "enet.acknowledge.recvtime", ftypes.UINT16)
 
-pf_conn = ProtoField.new("Connect", "enet_proto.connect", ftypes.BYTES, nil, base.NONE)
-pf_verify_conn = ProtoField.new("Verify Connect", "enet_proto.verify_connect", ftypes.BYTES, nil, base.NONE)
-pf_conn_peerid = ProtoField.new("Outgoing Peer Id", "enet_proto.connect.peerid", ftypes.UINT16)
-pf_conn_mtu = ProtoField.new("MTU", "enet_proto.connect.mtu", ftypes.UINT16)
-pf_conn_window_size = ProtoField.new("Window Size", "enet_proto.connect.window_size", ftypes.UINT32)
-pf_conn_channels = ProtoField.new("Channel Count", "enet_proto.connect.channels", ftypes.UINT32)
-pf_conn_session_id = ProtoField.new("Session Id", "enet_proto.connect.session_id", ftypes.UINT32)
+pf_handshake = ProtoField.new("handshakeect", "enet.handshakeect", ftypes.BYTES, nil, base.NONE)
+pf_verify_handshake = ProtoField.new("Verify handshakeect", "enet.verify_handshakeect", ftypes.BYTES, nil, base.NONE)
+pf_handshake_peerid = ProtoField.new("Outgoing Peer Id", "enet.handshakeect.peerid", ftypes.UINT16)
+pf_handshake_mtu = ProtoField.new("MTU", "enet.handshakeect.mtu", ftypes.UINT16)
+pf_handshake_window_size = ProtoField.new("Window Size", "enet.handshakeect.window_size", ftypes.UINT32)
+pf_handshake_channels = ProtoField.new("Channel Count", "enet.handshakeect.channels", ftypes.UINT32)
+pf_handshake_session_id = ProtoField.new("Session Id", "enet.handshakeect.session_id", ftypes.UINT32)
 
-pf_dc = ProtoField.new("Disconnect", "enet_proto.disconnect", ftypes.BYTES, nil, base.NONE)
-pf_dc_data = ProtoField.new("Ping", "enet_proto.disconnect.data", ftypes.UINT32)
+pf_dc = ProtoField.new("Dishandshakeect", "enet.dishandshakeect", ftypes.BYTES, nil, base.NONE)
+pf_dc_data = ProtoField.new("Ping", "enet.dishandshakeect.data", ftypes.UINT32)
 
-pf_ping = ProtoField.new("Ping", "enet_proto.ping", ftypes.BYTES, nil, base.NONE)
+pf_ping = ProtoField.new("Ping", "enet.ping", ftypes.BYTES, nil, base.NONE)
 
-pf_reliable = ProtoField.new("Send Reliable", "enet_proto.reliable", ftypes.BYTES, nil, base.NONE)
-pf_unreliable = ProtoField.new("Send Unreliable", "enet_proto.unreliable", ftypes.BYTES, nil, base.NONE)
-pf_fragment = ProtoField.new("Send Fragment", "enet_proto.fragment", ftypes.BYTES, nil, base.NONE)
-pf_unsequenced = ProtoField.new("Send Unsequenced", "enet_proto.unsequenced", ftypes.BYTES, nil, base.NONE)
-pf_payload_length = ProtoField.new("Payload Length", "enet_proto.payload.length", ftypes.UINT16)
-pf_payload = ProtoField.new("Payload", "enet_proto.payload", ftypes.BYTES, nil, base.NONE)
-pf_unreliable_seqnum = ProtoField.new("Unreliable Sequence Number", "enet_proto.unreliable.seqnum", ftypes.UINT16)
+pf_reliable = ProtoField.new("Send Reliable", "enet.reliable", ftypes.BYTES, nil, base.NONE)
+pf_unreliable = ProtoField.new("Send Unreliable", "enet.unreliable", ftypes.BYTES, nil, base.NONE)
+pf_fragment = ProtoField.new("Send Fragment", "enet.fragment", ftypes.BYTES, nil, base.NONE)
+pf_unsequenced = ProtoField.new("Send Unsequenced", "enet.unsequenced", ftypes.BYTES, nil, base.NONE)
+pf_payload_length = ProtoField.new("Payload Length", "enet.payload.length", ftypes.UINT16)
+pf_payload = ProtoField.new("Payload", "enet.payload", ftypes.BYTES, nil, base.NONE)
+pf_unreliable_seqnum = ProtoField.new("Unreliable Sequence Number", "enet.unreliable.seqnum", ftypes.UINT16)
 
-pf_fragment_startseqnum = ProtoField.new("Fragment Start Number", "enet_proto.fragment.startseqnum", ftypes.UINT16)
-pf_fragment_fragcount = ProtoField.new("Fragment Count", "enet_proto.fragment.count", ftypes.UINT32)
-pf_fragment_fragnum = ProtoField.new("Fragment Number", "enet_proto.fragment.num", ftypes.UINT32)
-pf_fragment_total_length = ProtoField.new("Total Length", "enet_proto.fragment.length", ftypes.UINT32)
-pf_fragment_offset = ProtoField.new("Offset", "enet_proto.fragment.offset", ftypes.UINT32)
+pf_fragment_startseqnum = ProtoField.new("Fragment Start Number", "enet.fragment.startseqnum", ftypes.UINT16)
+pf_fragment_fragcount = ProtoField.new("Fragment Count", "enet.fragment.count", ftypes.UINT32)
+pf_fragment_fragnum = ProtoField.new("Fragment Number", "enet.fragment.num", ftypes.UINT32)
+pf_fragment_total_length = ProtoField.new("Total Length", "enet.fragment.length", ftypes.UINT32)
+pf_fragment_offset = ProtoField.new("Offset", "enet.fragment.offset", ftypes.UINT32)
 
-pf_unsequenced_group = ProtoField.new("Unsequenced Group", "enet_proto.unsequenced.group", ftypes.UINT16)
+pf_unsequenced_group = ProtoField.new("Unsequenced Group", "enet.unsequenced.group", ftypes.UINT16)
 
-pf_bandwidth_limit = ProtoField.new("Bandwidth Limit", "enet_proto.bandwidth_limit", ftypes.BYTES, nil, base.NONE)
-pf_bandwidth_incoming_bandwidth = ProtoField.new("Incoming Bandwidth", "enet_proto.bandwidth_limit.incoming_bandwidth", ftypes.UINT32)
-pf_bandwidth_outgoing_bandwidth = ProtoField.new("Outgoing Bandwidth", "enet_proto.bandwidth_limit.outgoing_bandwidth", ftypes.UINT32)
+pf_bandwidth_limit = ProtoField.new("Bandwidth Limit", "enet.bandwidth_limit", ftypes.BYTES, nil, base.NONE)
+pf_bandwidth_incoming_bandwidth = ProtoField.new("Incoming Bandwidth", "enet.bandwidth_limit.incoming_bandwidth", ftypes.UINT32)
+pf_bandwidth_outgoing_bandwidth = ProtoField.new("Outgoing Bandwidth", "enet.bandwidth_limit.outgoing_bandwidth", ftypes.UINT32)
 
-pf_packet_throttle = ProtoField.new("Packet Throttle", "enet_proto.packet_throttle", ftypes.BYTES, nil, base.NONE)
-pf_throttle_throttle_interval = ProtoField.new("Packet Throttle Interval", "enet_proto.connect.throttle_interval", ftypes.UINT32)
-pf_throttle_throttle_accel = ProtoField.new("Packet Throttle Acceleration", "enet_proto.connect.throttle_accel", ftypes.UINT32)
-pf_throttle_throttle_decel = ProtoField.new("Packet Throttle Deceleration", "enet_proto.connect.throttle_decel", ftypes.UINT32)
+pf_packet_throttle = ProtoField.new("Packet Throttle", "enet.packet_throttle", ftypes.BYTES, nil, base.NONE)
+pf_throttle_throttle_interval = ProtoField.new("Packet Throttle Interval", "enet.handshakeect.throttle_interval", ftypes.UINT32)
+pf_throttle_throttle_accel = ProtoField.new("Packet Throttle Acceleration", "enet.handshakeect.throttle_accel", ftypes.UINT32)
+pf_throttle_throttle_decel = ProtoField.new("Packet Throttle Deceleration", "enet.handshakeect.throttle_decel", ftypes.UINT32)
 
 
-enet_proto.fields = {
+enet.fields = {
 	pf_checksum,
 	pf_flag_has_sent_time,
 	pf_peer_id,
@@ -103,18 +104,18 @@ enet_proto.fields = {
 	pf_ack_seqnum,
 	pf_ack_recvtime,
 
-	pf_conn,
-	pf_verify_conn,
-	pf_conn_peerid,
-	pf_conn_mtu,
-	pf_conn_window_size,
-	pf_conn_channels,
+	pf_handshake,
+	pf_verify_handshake,
+	pf_handshake_peerid,
+	pf_handshake_mtu,
+	pf_handshake_window_size,
+	pf_handshake_channels,
 	pf_bandwidth_incoming_bandwidth,
 	pf_bandwidth_outgoing_bandwidth,
 	pf_throttle_throttle_interval,
 	pf_throttle_throttle_accel,
 	pf_throttle_throttle_decel,
-	pf_conn_session_id,
+	pf_handshake_session_id,
 
 	pf_dc,
 	pf_dc_data,
@@ -141,6 +142,91 @@ enet_proto.fields = {
 	pf_bandwidth_limit,
 
 	pf_unsequenced_group
+}
+--]]
+
+pf_header = ProtoField.new("ENet Header", "enet.header", ftypes.BYTES, nil, base.NONE)
+pf_header_field1 = ProtoField.new("Unknown Field 1 (Peer ID/Checksum?)", "enet.header.1", ftypes.UINT32)
+pf_header_field2 = ProtoField.new("Unknown Field 2 (???)", "enet.header.2", ftypes.UINT32)
+pf_header_flags = ProtoField.new("?Flags?", "enet.header.flags", ftypes.UINT16, base.BIN)
+pf_header_flags_1 = ProtoField.new("Unknown Flag 1 (never)", "enet.header.flags.1", ftypes.BOOLEAN)
+pf_header_flags_2 = ProtoField.new("Unknown Flag 2 (never)", "enet.header.flags.2", ftypes.BOOLEAN)
+pf_header_flags_3 = ProtoField.new("Unknown Flag 3 (always)", "enet.header.flags.3", ftypes.BOOLEAN)
+pf_header_flags_4 = ProtoField.new("Unknown Flag 4 (never)", "enet.header.flags.4", ftypes.BOOLEAN)
+pf_header_flags_5 = ProtoField.new("Unknown Flag 5 (always)", "enet.header.flags.5", ftypes.BOOLEAN)
+pf_header_flags_6 = ProtoField.new("Unknown Flag 6 (never)", "enet.header.flags.6", ftypes.BOOLEAN)
+pf_header_flags_7 = ProtoField.new("Unknown Flag 7 (never)", "enet.header.flags.7", ftypes.BOOLEAN)
+pf_header_flags_8 = ProtoField.new("Unknown Flag 8 (always)", "enet.header.flags.8", ftypes.BOOLEAN)
+pf_header_flags_timestamped = ProtoField.new("Includes Timestamp", "enet.header.flags.timestamped", ftypes.BOOLEAN)
+pf_header_flags_10 = ProtoField.new("Unknown Flag 10 (handshake)", "enet.header.flags.10", ftypes.BOOLEAN)
+pf_header_flags_11 = ProtoField.new("Unknown Flag 11 (handshake)", "enet.header.flags.11", ftypes.BOOLEAN)
+pf_header_flags_12 = ProtoField.new("Unknown Flag 12 (handshake)", "enet.header.flags.12", ftypes.BOOLEAN)
+pf_header_flags_13 = ProtoField.new("Unknown Flag 13 (handshake)", "enet.header.flags.13", ftypes.BOOLEAN)
+pf_header_flags_14 = ProtoField.new("Unknown Flag 14 (handshake)", "enet.header.flags.14", ftypes.BOOLEAN)
+pf_header_flags_15 = ProtoField.new("Unknown Flag 15 (handshake)", "enet.header.flags.15", ftypes.BOOLEAN)
+pf_header_flags_16 = ProtoField.new("Unknown Flag 16 (handshake)", "enet.header.flags.16", ftypes.BOOLEAN)
+pf_header_time = ProtoField.new("Time", "enet.header.time", ftypes.UINT16)
+
+pf_handshake = ProtoField.new("Handshake", "enet.handshake", ftypes.BYTES, nil, base.NONE)
+pf_handshake_field2 = ProtoField.new("?Flags?", "enet.handshake.2", ftypes.BYTES)
+pf_handshake_field3 = ProtoField.new("???", "enet.handshake.3", ftypes.BYTES)
+pf_handshake_mtu = ProtoField.new("MTU", "enet.handshake.mtu", ftypes.UINT16)
+pf_handshake_window_size = ProtoField.new("Window Size", "enet.handshake.winsize", ftypes.UINT32)
+pf_handshake_channels = ProtoField.new("Channels", "enet.handshake.channels", ftypes.UINT32)
+pf_handshake_incoming_bandwidth = ProtoField.new("Incoming Bandwidth", "enet.handshake.incoming_bandwidth", ftypes.UINT32)
+pf_handshake_outgoing_bandwidth = ProtoField.new("Outgoing Bandwidth", "enet.handshake.outgoing_bandwidth", ftypes.UINT32)
+pf_handshake_packet_loss_tracking_window = ProtoField.new("Packet loss tracking window", "enet.handshake.pktloss_tracking", ftypes.UINT32)
+pf_handshake_throttle_accel = ProtoField.new("Throttle Acceleration", "enet.handshake.throttle_accel", ftypes.UINT32)
+pf_handshake_throttle_decel = ProtoField.new("Throttle Deceleration", "enet.handshake.throttle_decel", ftypes.UINT32)
+pf_handshake_field4 = ProtoField.new("?Session id?", "enet.handshake.4", ftypes.UINT32)
+
+pf_unknown = ProtoField.new("Unknown Packet", "enet.debug.unknown", ftypes.BYTES, nil, base.NONE)
+pf_potentially_decrypted = ProtoField.new("Unknown Packet (Maybe encrypted)", "enet.debug.decrypted", ftypes.BYTES, nil, base.NONE)
+pf_potentially_decrypted_length = ProtoField.new("Length", "enet.debug.decrypted.length", ftypes.UINT32)
+pf_potentially_decrypted_payload = ProtoField.new("Payload", "enet.debug.decrypted.payload", ftypes.BYTES, nil, base.NONE)
+keyinfo = ProtoField.new("Key", "enet.debug.key", ftypes.STRING)
+
+enet.fields = {
+	pf_header,
+	pf_header_field1,
+	pf_header_field2,
+	pf_header_flags,
+	pf_header_flags_1,
+	pf_header_flags_2,
+	pf_header_flags_3,
+	pf_header_flags_4,
+	pf_header_flags_5,
+	pf_header_flags_6,
+	pf_header_flags_7,
+	pf_header_flags_8,
+	pf_header_flags_timestamped,
+	pf_header_flags_10,
+	pf_header_flags_11,
+	pf_header_flags_12,
+	pf_header_flags_13,
+	pf_header_flags_14,
+	pf_header_flags_15,
+	pf_header_flags_16,
+
+	pf_handshake,
+	pf_header_time,
+	pf_handshake_field2,
+	pf_handshake_field3,
+	pf_handshake_mtu,
+	pf_handshake_window_size,
+	pf_handshake_channels,
+	pf_handshake_incoming_bandwidth,
+	pf_handshake_outgoing_bandwidth,
+	pf_handshake_packet_loss_tracking_window,
+	pf_handshake_throttle_accel,
+	pf_handshake_throttle_decel,
+	pf_handshake_field4,
+
+	pf_unknown,
+	pf_potentially_decrypted,
+	keyinfo,
+	pf_potentially_decrypted_length,
+	pf_potentially_decrypted_payload
 }
 
 lolcmds = {
@@ -225,14 +311,72 @@ lolcmds = {
 	pktinfo -> Pinfo object
 	root -> TreeItem object 
 --]]
-function enet_proto.dissector(tvbuf, pktinfo, root)
+function enet.dissector(tvbuf, pktinfo, root)
 
-	pktinfo.cols.protocol = "ENET"
+	pktinfo.cols.protocol = "ENet"
 	
 	pktlen = tvbuf:reported_length_remaining()
+	tree = root:add(enet, tvbuf:range(0,pktlen))
 	
-	tree = root:add(enet_proto, tvbuf:range(0,pktlen))
+	headerlen = 10
+	has_timestamp = tvbuf:range(8,2):bitfield(8,1) == 1
+	if has_timestamp then
+		headerlen = headerlen + 2
+	end
+
+	pheader = tvbuf:range(0, headerlen)
+	pheader_buf = pheader:tvb()
+
+	proto_header = tree:add(pf_header, pheader)
+	proto_header:add(pf_header_field1, pheader_buf:range(0,4))
+	proto_header:add(pf_header_field2, pheader_buf:range(4,4))
 	
+	hflagsbuf = pheader_buf:range(8,2)
+	header_flags = proto_header:add(pf_header_flags, hflagsbuf)
+	header_flags:add(pf_header_flags_1, hflagsbuf:bitfield(0,1))
+	header_flags:add(pf_header_flags_2, hflagsbuf:bitfield(1,1))
+	header_flags:add(pf_header_flags_3, hflagsbuf:bitfield(2,1))
+	header_flags:add(pf_header_flags_4, hflagsbuf:bitfield(3,1))
+	header_flags:add(pf_header_flags_5, hflagsbuf:bitfield(4,1))
+	header_flags:add(pf_header_flags_6, hflagsbuf:bitfield(5,1))
+	header_flags:add(pf_header_flags_7, hflagsbuf:bitfield(6,1))
+	header_flags:add(pf_header_flags_8, hflagsbuf:bitfield(7,1))
+	header_flags:add(pf_header_flags_timestamped, has_timestamp)
+	header_flags:add(pf_header_flags_10, hflagsbuf:bitfield(9,1))
+	header_flags:add(pf_header_flags_11, hflagsbuf:bitfield(10,1))
+	header_flags:add(pf_header_flags_12, hflagsbuf:bitfield(11,1))
+	header_flags:add(pf_header_flags_13, hflagsbuf:bitfield(12,1))
+	header_flags:add(pf_header_flags_14, hflagsbuf:bitfield(13,1))
+	header_flags:add(pf_header_flags_15, hflagsbuf:bitfield(14,1))
+	header_flags:add(pf_header_flags_16, hflagsbuf:bitfield(15,1))
+
+	if has_timestamp then
+		proto_header:add(pf_header_time, pheader_buf:range(10,2))
+	end
+
+	if tvbuf:range(9, 1):uint() == 0xff then
+		connect = tvbuf:range(headerlen, pktlen-headerlen)
+		connect_buf = connect:tvb()
+
+		tree_connect = tree:add(pf_handshake, connect)
+		tree_connect:add(pf_handshake_field2, connect_buf:range(0,4))
+		tree_connect:add(pf_handshake_field3, connect_buf:range(4,2))
+		tree_connect:add(pf_handshake_mtu, connect_buf:range(6,2))
+		tree_connect:add(pf_handshake_window_size, connect_buf:range(8,4))
+		tree_connect:add(pf_handshake_channels, connect_buf:range(12,4))
+		tree_connect:add(pf_handshake_incoming_bandwidth, connect_buf:range(16,4))
+		tree_connect:add(pf_handshake_outgoing_bandwidth, connect_buf:range(20,4))
+		tree_connect:add(pf_handshake_packet_loss_tracking_window, connect_buf:range(24,4))
+		tree_connect:add(pf_handshake_throttle_accel, connect_buf:range(28,4))
+		tree_connect:add(pf_handshake_throttle_decel, connect_buf:range(32,4))
+		tree_connect:add(pf_handshake_field4, connect_buf:range(36,4))
+	else
+		tree:add(pf_unknown, tvbuf:range(headerlen, pktlen-headerlen))
+		
+		-- encryption doesn't happen here yet, probably
+		decode_payload(tvbuf:range(headerlen, pktlen-headerlen), tree, pktinfo)
+	end
+
 	-- proto header
 
 	-- Seems like sent_time is always included?
@@ -243,7 +387,6 @@ function enet_proto.dissector(tvbuf, pktinfo, root)
 	else
 		header_length = 6
 	end
-	]]--
 
 	header_length = 8
 	pheader = tvbuf:range(0, header_length)
@@ -284,11 +427,11 @@ function enet_proto.dissector(tvbuf, pktinfo, root)
 	if command == 1 then
 		parse_acknowledge(tvbuf, tree)
 	elseif command == 2 then
-		parse_connect(tvbuf, tree)
+		parse_handshakeect(tvbuf, tree)
 	elseif command == 3 then
-		parse_verify_connect(tvbuf, tree)
+		parse_verify_handshakeect(tvbuf, tree)
 	elseif command == 4 then
-		parse_disconnect(tvbuf, tree)
+		parse_dishandshakeect(tvbuf, tree)
 	elseif command == 5 then
 		parse_ping(tvbuf, tree)
 	elseif command == 6 then
@@ -305,108 +448,42 @@ function enet_proto.dissector(tvbuf, pktinfo, root)
 		parse_packet_throttle(tvbuf, tree)
 	end
 
-	--[[
-	if command == 6 then
-	
-		loltree = root:add(pf_data, tvbuf:range(10, pktlen - 10))
-		loltree:set_text("LoL Data")
-		
-		if b64key == "" then
-			loltree:add(pf_key, "No key found" .. " (" .. b64keyfile .. ")")
-			return
-		end
-		
-		loltree:add(pf_key, b64key .. " (" .. b64keyfile .. ")")
-	
-		coverage = 10
-		
-		while coverage < pktlen do
-		
-			data_length = tvbuf:range(coverage-2,2)
-			loltree:add(pf_data_length, data_length)
-			
-			data = tvbuf:range(coverage, data_length:uint())
-			
-			data_tmp = {}
-			
-			for i=0, data_length:uint()-1 do
-				data_tmp[i] = tvbuf:range(coverage+i, 1):uint()
-			end
-			
-			decryptedData = bf_Decrypt(data_tmp, data_length:uint())
-			
-			decryptedByteArray = ByteArray.new()
-			decryptedHexString = ""
-			decryptedByteArray:set_size(data_length:uint())
-			for i=0, data_length:uint()-1 do
-				decryptedByteArray:set_index(i, decryptedData[i])
-				decryptedHexString = decryptedHexString .. string.format("%x ", decryptedData[i])
-			end
-			
-			lolcmd = decryptedByteArray:get_index(0)
-			if lolcmds[lolcmd] ~= nil then
-				pktinfo.cols.info:append(" " .. lolcmds[lolcmd])
-			end
-			
-			loltree:add(pf_data_decrypted, tvbuf:range(coverage, data_length:uint()), decryptedHexString)
-			
-			coverage = coverage + data_length:uint()
-			
-			if coverage < pktlen and 
-			( tvbuf:range(coverage, 1):uint() == 0x07 or tvbuf:range(coverage, 1):uint() == 0x49 ) then
-				coverage = coverage + 8
-			else
-				coverage = coverage + 6
-			end
-			
-		end
-		
-	end
-	--]]
+	]]--
 end
 
 function decode_payload(tvrange, tree, pktinfo)
 	tvbuf = tvrange:tvb()
 
-	loltree = tree:add(pf_data, tvrange)
-	loltree:set_text("Decrypted Payload")
+	loltree = tree:add(pf_potentially_decrypted, tvrange)
+	loltree:set_text("Decrypted Payload (Note that we might be decrypting too soon here)")
 	
 	if b64key == "" then
-		loltree:add(pf_key, "No key found" .. " (" .. b64keyfile .. ")")
+		loltree:add(keyinfo, "No key found" .. " (" .. b64keyfile .. ")")
 		return
 	end
 	
-	loltree:add(pf_key, b64key .. " (" .. b64keyfile .. ")")
+	loltree:add(keyinfo, b64key .. " (" .. b64keyfile .. ")")
 
-	coverage = 0
+	data_length = tvbuf:len()
+	loltree:add(pf_potentially_decrypted_length, data_length)
 	
-	--while coverage < pktlen do
+	data_tmp = {}
+	for i=0, data_length-1 do
+		data_tmp[i] = tvbuf:range(i, 1):uint()
+	end
 	
-		data_length = tvbuf:len()
-		loltree:add(pf_data_length, data_length)
-		
-		data_tmp = {}
-		
-		for i=0, data_length-1 do
-			data_tmp[i] = tvbuf:range(i, 1):uint()
-		end
-		
-		decryptedData = bf_Decrypt(data_tmp, data_length)
-		
-		decryptedHexString = ""
-		decryptedByteArray = ByteArray.new()
-		decryptedByteArray:set_size(data_length)
-		for i=0, data_length-1 do
-			decryptedByteArray:set_index(i, decryptedData[i])
-			decryptedHexString = decryptedHexString .. string.format("%x ", decryptedData[i])
-		end
-		
-		lolcmd = decryptedByteArray:get_index(0)
-		if lolcmds[lolcmd] ~= nil then
-			pktinfo.cols.info:append(" " .. lolcmds[lolcmd])
-		end
-		
-		loltree:add(pf_payload, tvrange)
+	decryptedData = bf_Decrypt(data_tmp, data_length)
+	
+	decryptedByteArray = ByteArray.new()
+	decryptedByteArray:set_size(data_length)
+	for i=0, data_length-1 do
+		decryptedByteArray:set_index(i, decryptedData[i])
+	end
+
+	decrypted_tvb = ByteArray.tvb(decryptedByteArray, "Decrypted tvb")
+	loltree:add(pf_potentially_decrypted_payload, decrypted_tvb:range(0, decrypted_tvb:reported_length_remaining()))
+	
+	--loltree:add(pf_payload, tvrange)
 		-- Wireshark crashes for tvbufs where the source is not a child of the original tvbuf
 		--loltree:add(pf_data_decrypted, decryptedByteArray:tvb():range(0))
 		
@@ -432,38 +509,38 @@ function parse_acknowledge(tvbuf, tree)
 	ack:add(pf_ack_recvtime, tvbuf:range(2, 2))
 end
 
-function parse_connect(tvbuf, tree)
-	conn_buf = tvbuf:range(0, 36)
-	conn = tree:add(pf_conn, conn_buf)
+function parse_handshakeect(tvbuf, tree)
+	handshake_buf = tvbuf:range(0, 36)
+	handshake = tree:add(pf_handshake, handshake_buf)
 
-	conn:add(pf_conn_peerid, tvbuf:range(0, 2))
-	conn:add(pf_conn_mtu, tvbuf:range(2, 2))
-	conn:add(pf_conn_window_size, tvbuf:range(4, 4))
-	conn:add(pf_conn_channels, tvbuf:range(8, 4))
-	conn:add(pf_bandwidth_incoming_bandwidth, tvbuf:range(12, 4))
-	conn:add(pf_bandwidth_outgoing_bandwidth, tvbuf:range(16, 4))
-	conn:add(pf_throttle_throttle_interval, tvbuf:range(20, 4))
-	conn:add(pf_throttle_throttle_accel, tvbuf:range(24, 4))
-	conn:add(pf_throttle_throttle_decel, tvbuf:range(28, 4))
-	conn:add(pf_conn_session_id, tvbuf:range(32, 4))
+	handshake:add(pf_handshake_peerid, tvbuf:range(0, 2))
+	handshake:add(pf_handshake_mtu, tvbuf:range(2, 2))
+	handshake:add(pf_handshake_window_size, tvbuf:range(4, 4))
+	handshake:add(pf_handshake_channels, tvbuf:range(8, 4))
+	handshake:add(pf_bandwidth_incoming_bandwidth, tvbuf:range(12, 4))
+	handshake:add(pf_bandwidth_outgoing_bandwidth, tvbuf:range(16, 4))
+	handshake:add(pf_throttle_throttle_interval, tvbuf:range(20, 4))
+	handshake:add(pf_throttle_throttle_accel, tvbuf:range(24, 4))
+	handshake:add(pf_throttle_throttle_decel, tvbuf:range(28, 4))
+	handshake:add(pf_handshake_session_id, tvbuf:range(32, 4))
 end
 
-function parse_verify_connect(tvbuf, tree)
-	conn_buf = tvbuf:range(0, 32)
-	conn = tree:add(pf_verify_conn, conn_buf)
+function parse_verify_handshakeect(tvbuf, tree)
+	handshake_buf = tvbuf:range(0, 32)
+	handshake = tree:add(pf_verify_handshake, handshake_buf)
 
-	conn:add(pf_conn_peerid, tvbuf:range(0, 2))
-	conn:add(pf_conn_mtu, tvbuf:range(2, 2))
-	conn:add(pf_conn_window_size, tvbuf:range(4, 4))
-	conn:add(pf_conn_channels, tvbuf:range(8, 4))
-	conn:add(pf_bandwidth_incoming_bandwidth, tvbuf:range(12, 4))
-	conn:add(pf_bandwidth_outgoing_bandwidth, tvbuf:range(16, 4))
-	conn:add(pf_throttle_throttle_interval, tvbuf:range(20, 4))
-	conn:add(pf_throttle_throttle_accel, tvbuf:range(24, 4))
-	conn:add(pf_throttle_throttle_decel, tvbuf:range(28, 4))
+	handshake:add(pf_handshake_peerid, tvbuf:range(0, 2))
+	handshake:add(pf_handshake_mtu, tvbuf:range(2, 2))
+	handshake:add(pf_handshake_window_size, tvbuf:range(4, 4))
+	handshake:add(pf_handshake_channels, tvbuf:range(8, 4))
+	handshake:add(pf_bandwidth_incoming_bandwidth, tvbuf:range(12, 4))
+	handshake:add(pf_bandwidth_outgoing_bandwidth, tvbuf:range(16, 4))
+	handshake:add(pf_throttle_throttle_interval, tvbuf:range(20, 4))
+	handshake:add(pf_throttle_throttle_accel, tvbuf:range(24, 4))
+	handshake:add(pf_throttle_throttle_decel, tvbuf:range(28, 4))
 end
 
-function parse_disconnect(tvbuf, tree)
+function parse_dishandshakeect(tvbuf, tree)
 	dc_buf = tvbuf:range(0, 4)
 	dc = tree:add(pf_dc, dc_buf)
 
@@ -537,7 +614,7 @@ end
 -- udp_table = DissectorTable.get("udp.port")
 
 -- register our protocol to handle one specific udp port
--- udp_table:add(5100, enet_proto)
+-- udp_table:add(5100, enet)
 
 --[[
 	a heuristic to decide if the ENET dissector should handle the data
@@ -638,11 +715,11 @@ function heur_dissect_enet(tvbuf, pktinfo, root)
 	
 	bf_Init(b64key)
 	
-	enet_proto.dissector(tvbuf, pktinfo, root)
-	pktinfo.conversation = enet_proto
+	enet.dissector(tvbuf, pktinfo, root)
+	pktinfo.conversation = enet
 	
 	return false -- yeah just return always false .....
 end
 
 -- register the heuristic for udp only:
-enet_proto:register_heuristic("udp", heur_dissect_enet)
+enet:register_heuristic("udp", heur_dissect_enet)
